@@ -1,0 +1,11 @@
+node_modules/
+.env
+data/*.sqlite3
+data/*.sqlite3-journal
+data/*.sqlite3-wal
+data/*.sqlite3-shm
+data/downloads/*
+!data/downloads/.gitkeep
+public/css/output.css
+*.log
+.DS_Store

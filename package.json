@@ -1,0 +1,30 @@
+{
+  "name": "micro-nodo-comunitario",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Micro-Nodo Comunitario de Contenido Local y Servicios Digitales (Offline-First) - Fase 1 MVP",
+  "type": "commonjs",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "db:migrate": "node src/db/migrate.js",
+    "db:seed": "node scripts/seed.js",
+    "sync": "node -e \"require('./src/workers/syncWorker').ejecutarSincronizacion()\"",
+    "css:build": "tailwindcss -i ./src/styles/input.css -o ./public/css/output.css --minify",
+    "css:watch": "tailwindcss -i ./src/styles/input.css -o ./public/css/output.css --watch",
+    "postinstall": "node src/db/migrate.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "kysely": "^0.27.4",
+    "node-cron": "^3.0.3"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.10"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  }
+}
