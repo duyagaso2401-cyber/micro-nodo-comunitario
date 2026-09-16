@@ -21,7 +21,7 @@
 const cron = require('node-cron');
 const env = require('../config/env');
 const logger = require('../utils/logger');
-const { estaDisponible } = require('../config/centralDatabase');
+const centralDatabase = require('../config/centralDatabase');
 const centralRepository = require('../repositories/centralRepository');
 const diskManager = require('../workers/diskManager');
 const contenidosRepository = require('../repositories/contenidosRepository');
@@ -55,37 +55,50 @@ async function recolectarEstado() {
   };
 }
 
-async function enviarHeartbeat() {
-  if (!env.TELEMETRY_HABILITADO || !estaDisponible()) return;
+/**
+ * @param {{esCorridaInicial?: boolean}} [opciones] `esCorridaInicial: true`
+ *   solo cambia el texto de los logs (para distinguir en la tabla
+ *   `log_sincronizacion` el heartbeat de prueba del arranque de los
+ *   heartbeats periódicos normales).
+ */
+async function enviarHeartbeat({ esCorridaInicial = false } = {}) {
+  // estaDisponible() relee CENTRAL_DATABASE_URL en caliente en cada
+  // llamada (ver config/centralDatabase.js), así que un cambio en la
+  // variable de entorno se refleja aquí sin reiniciar el proceso.
+  if (!env.TELEMETRY_HABILITADO || !centralDatabase.estaDisponible()) return;
   if (enviandoHeartbeat) return;
 
   enviandoHeartbeat = true;
   const inicio = Date.now();
+  const sufijoCorrida = esCorridaInicial ? ' (corrida inicial de arranque)' : '';
 
   try {
     const estado = await recolectarEstado();
     await centralRepository.upsertNodo();
     await centralRepository.insertarHeartbeat(estado);
 
+    centralDatabase.registrarExito();
+
     logger.info(
       'telemetryService',
-      `Heartbeat enviado: disco ${Math.round(estado.discoUsadoMB)}MB, ${estado.contenidosActivos} contenidos, ` +
+      `Heartbeat enviado${sufijoCorrida}: disco ${Math.round(estado.discoUsadoMB)}MB, ${estado.contenidosActivos} contenidos, ` +
         `${estado.descargasHoy} descargas hoy, ${estado.pinsConsumidosHoy} PINs hoy, $${estado.recaudadoHoyCop} COP hoy.`
     );
     await logSincronizacionRepository.registrarEjecucion({
       tipo: 'heartbeat',
       estado: 'exito',
-      detalle: 'Heartbeat enviado a la central.',
+      detalle: `Heartbeat enviado a la central.${sufijoCorrida}`,
       registrosProcesados: 1,
       duracionMs: Date.now() - inicio,
     });
   } catch (err) {
-    logger.error('telemetryService', 'Error enviando heartbeat:', err.message);
+    centralDatabase.registrarFallo();
+    logger.error('telemetryService', `Error enviando heartbeat${sufijoCorrida}:`, err.message);
     await logSincronizacionRepository
       .registrarEjecucion({
         tipo: 'heartbeat',
         estado: 'error',
-        detalle: err.message,
+        detalle: `${err.message}${sufijoCorrida}`,
         duracionMs: Date.now() - inicio,
       })
       .catch(() => {});
@@ -110,6 +123,13 @@ function iniciarProgramador() {
     logger.error('telemetryService', `Expresión cron de telemetría inválida: "${expresionCron}".`);
     return null;
   }
+
+  // Igual que centralSyncWorker: un primer heartbeat inmediato al
+  // arrancar (fire-and-forget) para detectar configuración inválida de la
+  // central desde el arranque, sin esperar al primer disparo del cron.
+  enviarHeartbeat({ esCorridaInicial: true }).catch((err) =>
+    logger.error('telemetryService', 'Fallo no controlado en el heartbeat inicial:', err)
+  );
 
   const tarea = cron.schedule(expresionCron, () => {
     enviarHeartbeat().catch((err) => logger.error('telemetryService', 'Fallo no controlado:', err));

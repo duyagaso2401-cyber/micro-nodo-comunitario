@@ -53,6 +53,18 @@ async function eliminarAnuncio(id) {
   await db.deleteFrom('anuncios').where('id', '=', id).execute();
 }
 
+/** Solo toca las columnas presentes (distintas de `undefined`) en `datos`. */
+async function actualizarAnuncio(id, datos) {
+  const set = {};
+  if (datos.titulo !== undefined) set.titulo = datos.titulo;
+  if (datos.imagenUrl !== undefined) set.imagen_url = datos.imagenUrl;
+  if (datos.link !== undefined) set.link = datos.link;
+  if (datos.impresionesMax !== undefined) set.impresiones_max = datos.impresionesMax;
+
+  if (Object.keys(set).length === 0) return;
+  await db.updateTable('anuncios').set(set).where('id', '=', id).execute();
+}
+
 module.exports = {
   listarTodos,
   listarActivosConCupo,
@@ -61,4 +73,5 @@ module.exports = {
   incrementarImpresion,
   alternarActivo,
   eliminarAnuncio,
+  actualizarAnuncio,
 };

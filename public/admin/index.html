@@ -44,6 +44,7 @@
     <button class="tab-admin tab-admin-activa" data-tab="pins">PINs</button>
     <button class="tab-admin tab-admin-inactiva" data-tab="sync">Sincronización</button>
     <button class="tab-admin tab-admin-inactiva" data-tab="contenidos">Contenidos</button>
+    <button class="tab-admin tab-admin-inactiva" data-tab="categorias">Categorías</button>
     <button class="tab-admin tab-admin-inactiva" data-tab="anuncios">Publicidad</button>
     <button class="tab-admin tab-admin-inactiva" data-tab="cuenta">Mi cuenta</button>
   </nav>
@@ -95,10 +96,11 @@
       </div>
     </section>
 
-    <!-- Pestaña Contenidos (carga manual) -->
+    <!-- Pestaña Contenidos -->
     <section id="panel-contenidos" class="hidden space-y-4">
-      <form id="form-subir-contenido" class="space-y-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
-        <p class="text-sm font-semibold text-slate-700">Carga manual de emergencia (sin internet)</p>
+      <form id="form-contenido" class="space-y-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
+        <p id="titulo-form-contenido" class="text-sm font-semibold text-slate-700">Carga manual de emergencia (sin internet)</p>
+        <input type="hidden" name="id" id="contenido-id" value="" />
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label class="etiqueta-admin">Título *</label>
@@ -110,7 +112,7 @@
           </div>
           <div>
             <label class="etiqueta-admin">Tipo *</label>
-            <select name="tipo" required class="campo-admin">
+            <select name="tipo" id="contenido-tipo" required class="campo-admin">
               <option value="pdf">PDF</option>
               <option value="epub">EPUB</option>
               <option value="mp3">MP3</option>
@@ -123,27 +125,83 @@
             <label class="etiqueta-admin">Categoría</label>
             <select name="categoriaSlug" id="select-categoria" class="campo-admin"></select>
           </div>
-          <div class="sm:col-span-2">
-            <label class="etiqueta-admin">Descripción</label>
-            <textarea name="descripcion" rows="2" class="campo-admin"></textarea>
+          <div>
+            <label class="etiqueta-admin">Estado</label>
+            <select name="estado" id="contenido-estado" class="campo-admin">
+              <option value="activo">Activo</option>
+              <option value="pendiente">Inactivo</option>
+            </select>
           </div>
           <div class="flex items-center gap-2">
             <input id="es-premium" name="esPremium" type="checkbox" class="h-4 w-4" />
             <label for="es-premium" class="text-sm text-slate-600">Es contenido premium (requiere PIN)</label>
           </div>
-          <div>
-            <label class="etiqueta-admin">Archivo *</label>
-            <input name="archivo" type="file" required class="campo-admin" />
+          <div class="sm:col-span-2">
+            <label class="etiqueta-admin">Descripción</label>
+            <textarea name="descripcion" rows="2" class="campo-admin"></textarea>
+          </div>
+          <div class="sm:col-span-2">
+            <label class="etiqueta-admin" id="etiqueta-archivo-contenido">Archivo *</label>
+            <input name="archivo" id="contenido-archivo" type="file" required class="campo-admin" />
+            <p id="ayuda-archivo-contenido" class="hidden text-xs text-slate-500">Déjalo vacío para conservar el archivo actual.</p>
           </div>
         </div>
-        <button type="submit" class="boton-primario">Subir contenido</button>
+        <div class="flex gap-2">
+          <button type="submit" id="btn-guardar-contenido" class="boton-primario">Subir contenido</button>
+          <button type="button" id="btn-cancelar-edicion-contenido" class="hidden rounded-lg bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-600">Cancelar edición</button>
+        </div>
         <p id="resultado-subir-contenido" class="hidden text-center text-sm font-medium"></p>
       </form>
+
+      <div class="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-100">
+        <table class="tabla-admin">
+          <thead><tr><th>Título</th><th>Tipo</th><th>Categoría</th><th>Estado</th><th>Premium</th><th></th></tr></thead>
+          <tbody id="tabla-contenidos"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Pestaña Categorías -->
+    <section id="panel-categorias" class="hidden space-y-4">
+      <form id="form-categoria" class="grid grid-cols-1 gap-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:grid-cols-2">
+        <p id="titulo-form-categoria" class="text-sm font-semibold text-slate-700 sm:col-span-2">Nueva categoría</p>
+        <input type="hidden" name="id" id="categoria-id" value="" />
+        <div>
+          <label class="etiqueta-admin">Nombre *</label>
+          <input name="nombre" type="text" required class="campo-admin" />
+        </div>
+        <div>
+          <label class="etiqueta-admin">Ícono</label>
+          <input name="icono" type="text" placeholder="folder" class="campo-admin" />
+        </div>
+        <div>
+          <label class="etiqueta-admin">Orden</label>
+          <input name="orden" type="number" value="0" class="campo-admin" />
+        </div>
+        <div class="sm:col-span-2">
+          <label class="etiqueta-admin">Descripción</label>
+          <textarea name="descripcion" rows="2" class="campo-admin"></textarea>
+        </div>
+        <div class="flex gap-2 sm:col-span-2">
+          <button type="submit" id="btn-guardar-categoria" class="boton-primario">Crear categoría</button>
+          <button type="button" id="btn-cancelar-edicion-categoria" class="hidden rounded-lg bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-600">Cancelar edición</button>
+        </div>
+        <p id="resultado-categoria" class="hidden text-sm font-medium sm:col-span-2"></p>
+      </form>
+
+      <div class="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-100">
+        <table class="tabla-admin">
+          <thead><tr><th>Nombre</th><th>Slug</th><th>Orden</th><th></th></tr></thead>
+          <tbody id="tabla-categorias"></tbody>
+        </table>
+      </div>
     </section>
 
     <!-- Pestaña Publicidad -->
     <section id="panel-anuncios" class="hidden space-y-4">
-      <form id="form-crear-anuncio" class="grid grid-cols-1 gap-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:grid-cols-2">
+      <form id="form-anuncio" class="grid grid-cols-1 gap-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:grid-cols-2">
+        <p id="titulo-form-anuncio" class="text-sm font-semibold text-slate-700 sm:col-span-2">Nuevo anuncio</p>
+        <input type="hidden" name="id" id="anuncio-id" value="" />
         <div>
           <label class="etiqueta-admin">Título / comercio *</label>
           <input name="titulo" type="text" required class="campo-admin" />
@@ -153,15 +211,17 @@
           <input name="link" type="text" placeholder="https://…" class="campo-admin" />
         </div>
         <div>
-          <label class="etiqueta-admin">Imagen (banner)</label>
-          <input name="imagen" type="file" accept="image/*" class="campo-admin" />
+          <label class="etiqueta-admin" id="etiqueta-imagen-anuncio">Imagen (banner)</label>
+          <input name="imagen" id="anuncio-imagen" type="file" accept="image/*" class="campo-admin" />
+          <p id="ayuda-imagen-anuncio" class="hidden text-xs text-slate-500">Déjalo vacío para conservar la imagen actual.</p>
         </div>
         <div>
           <label class="etiqueta-admin">Impresiones máximas (0 = ilimitado)</label>
           <input name="impresionesMax" type="number" min="0" value="0" class="campo-admin" />
         </div>
-        <div class="sm:col-span-2">
-          <button type="submit" class="boton-primario">Crear anuncio</button>
+        <div class="flex gap-2 sm:col-span-2">
+          <button type="submit" id="btn-guardar-anuncio" class="boton-primario">Crear anuncio</button>
+          <button type="button" id="btn-cancelar-edicion-anuncio" class="hidden rounded-lg bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-600">Cancelar edición</button>
         </div>
       </form>
 

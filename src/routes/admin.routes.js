@@ -25,10 +25,19 @@ router.post('/pins/generar', adminController.generarPins);
 
 router.get('/sincronizacion', adminController.listarSincronizacion);
 
+router.get('/contenidos', adminController.listarContenidosAdmin);
 router.post('/contenidos', uploadContenidoManual, adminController.subirContenidoManual);
+router.put('/contenidos/:id', uploadContenidoManual, adminController.editarContenido);
+router.delete('/contenidos/:id', adminController.eliminarContenido);
+
+router.get('/categorias', adminController.listarCategoriasAdmin);
+router.post('/categorias', adminController.crearCategoriaAdmin);
+router.put('/categorias/:id', adminController.editarCategoriaAdmin);
+router.delete('/categorias/:id', adminController.eliminarCategoriaAdmin);
 
 router.get('/anuncios', adminController.listarAnuncios);
 router.post('/anuncios', uploadImagenAnuncio, adminController.crearAnuncio);
+router.put('/anuncios/:id', uploadImagenAnuncio, adminController.editarAnuncio);
 router.patch('/anuncios/:id/alternar', adminController.alternarAnuncio);
 router.delete('/anuncios/:id', adminController.eliminarAnuncio);
 

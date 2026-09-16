@@ -1,24 +1,29 @@
 'use strict';
 
 /**
- * Acceso a datos sobre la base de datos PostgreSQL central. Todas las
- * funciones asumen que quien las llama ya comprobó `estaDisponible()`
- * (ver src/config/centralDatabase.js) — si `db` es null, cada función
+ * Acceso a datos sobre la base de datos PostgreSQL central. Cada función
+ * pide el cliente Kysely vigente con `centralDatabase.obtenerDb()` en el
+ * momento de ejecutarse (no lo importa una sola vez al cargar el módulo),
+ * para que una reconexión en caliente (cadena de conexión actualizada, o
+ * reconstrucción tras varios fallos) la vean todas las llamadas siguientes
+ * sin reiniciar el proceso. Si `obtenerDb()` devuelve `null`, cada función
  * lanza un error claro en vez de fallar con un TypeError críptico.
  */
 
-const { db, estaDisponible } = require('../config/centralDatabase');
+const centralDatabase = require('../config/centralDatabase');
 const env = require('../config/env');
 
-function exigirConexion() {
-  if (!estaDisponible()) {
+function obtenerDbOLanzar() {
+  const db = centralDatabase.obtenerDb();
+  if (!db) {
     throw new Error('La base de datos central no está configurada (CENTRAL_DATABASE_URL vacía).');
   }
+  return db;
 }
 
 /** Registra/actualiza este nodo en la tabla `nodos` de la central. */
 async function upsertNodo() {
-  exigirConexion();
+  const db = obtenerDbOLanzar();
   await db
     .insertInto('nodos')
     .values({
@@ -44,7 +49,7 @@ async function upsertNodo() {
  * @param {Array<object>} transaccionesLocales filas de la tabla `transacciones` de SQLite
  */
 async function insertarLoteTransacciones(transaccionesLocales) {
-  exigirConexion();
+  const db = obtenerDbOLanzar();
   if (transaccionesLocales.length === 0) return;
 
   const filas = transaccionesLocales.map((t) => ({
@@ -65,7 +70,7 @@ async function insertarLoteTransacciones(transaccionesLocales) {
 
 /** Inserta un registro de heartbeat/telemetría en la central. */
 async function insertarHeartbeat(datos) {
-  exigirConexion();
+  const db = obtenerDbOLanzar();
   await db
     .insertInto('heartbeats')
     .values({

@@ -24,44 +24,64 @@
 const cron = require('node-cron');
 const env = require('../config/env');
 const logger = require('../utils/logger');
-const { estaDisponible } = require('../config/centralDatabase');
+const centralDatabase = require('../config/centralDatabase');
 const centralRepository = require('../repositories/centralRepository');
 const transaccionesRepository = require('../repositories/transaccionesRepository');
 const logSincronizacionRepository = require('../repositories/logSincronizacionRepository');
 
 let sincronizacionEnCurso = false;
 
-async function sincronizarAhora() {
-  if (!env.CENTRAL_SYNC_HABILITADO || !estaDisponible()) return;
+/**
+ * @param {{esCorridaInicial?: boolean}} [opciones] `esCorridaInicial: true`
+ *   solo cambia el texto de los logs (para distinguir en la tabla
+ *   `log_sincronizacion` la corrida de prueba del arranque de las corridas
+ *   periódicas normales).
+ */
+async function sincronizarAhora({ esCorridaInicial = false } = {}) {
+  // estaDisponible() relee CENTRAL_DATABASE_URL en caliente en cada
+  // llamada (ver config/centralDatabase.js), así que un cambio en la
+  // variable de entorno (o su primera configuración) se refleja aquí sin
+  // reiniciar el proceso.
+  if (!env.CENTRAL_SYNC_HABILITADO || !centralDatabase.estaDisponible()) return;
   if (sincronizacionEnCurso) return;
 
   sincronizacionEnCurso = true;
   const inicio = Date.now();
+  const sufijoCorrida = esCorridaInicial ? ' (corrida inicial de arranque)' : '';
 
   try {
     const lote = await transaccionesRepository.listarNoSincronizadasConCentral(env.CENTRAL_SYNC_LOTE_MAX);
-    if (lote.length === 0) return; // nada que hacer, no se registra log para no llenarlo de ruido
+    if (lote.length === 0) {
+      centralDatabase.registrarExito();
+      return; // nada que hacer, no se registra log para no llenarlo de ruido
+    }
 
     await centralRepository.upsertNodo();
     await centralRepository.insertarLoteTransacciones(lote);
     await transaccionesRepository.marcarSincronizadasConCentral(lote.map((t) => t.id));
 
+    centralDatabase.registrarExito();
+
     const duracionMs = Date.now() - inicio;
-    logger.info('centralSyncWorker', `Sincronizadas ${lote.length} transacción(es) con la central en ${duracionMs}ms.`);
+    logger.info(
+      'centralSyncWorker',
+      `Sincronizadas ${lote.length} transacción(es) con la central en ${duracionMs}ms${sufijoCorrida}.`
+    );
     await logSincronizacionRepository.registrarEjecucion({
       tipo: 'transacciones_central',
       estado: 'exito',
-      detalle: `${lote.length} transacción(es) enviadas.`,
+      detalle: `${lote.length} transacción(es) enviadas.${sufijoCorrida}`,
       registrosProcesados: lote.length,
       duracionMs,
     });
   } catch (err) {
-    logger.error('centralSyncWorker', 'Error sincronizando transacciones con la central:', err.message);
+    centralDatabase.registrarFallo();
+    logger.error('centralSyncWorker', `Error sincronizando transacciones con la central${sufijoCorrida}:`, err.message);
     await logSincronizacionRepository
       .registrarEjecucion({
         tipo: 'transacciones_central',
         estado: 'error',
-        detalle: err.message,
+        detalle: `${err.message}${sufijoCorrida}`,
         duracionMs: Date.now() - inicio,
       })
       .catch(() => {}); // si hasta el log local falla, no queremos otra excepción no controlada
@@ -82,6 +102,15 @@ function iniciarProgramador() {
     );
     return null;
   }
+
+  // Corrida de prueba inmediata al arrancar (fire-and-forget, no bloquea
+  // app.listen()): así un problema de configuración de la central (URL mal
+  // escrita, credenciales vencidas, tabla faltante) queda visible en
+  // log_sincronizacion desde el arranque del nodo, en vez de recién en el
+  // primer disparo del cron (hasta CENTRAL_SYNC_CRON_EXPRESION después).
+  sincronizarAhora({ esCorridaInicial: true }).catch((err) =>
+    logger.error('centralSyncWorker', 'Fallo no controlado en la corrida inicial:', err)
+  );
 
   const tarea = cron.schedule(env.CENTRAL_SYNC_CRON_EXPRESION, () => {
     sincronizarAhora().catch((err) => logger.error('centralSyncWorker', 'Fallo no controlado:', err));

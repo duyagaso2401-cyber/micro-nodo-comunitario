@@ -66,6 +66,24 @@ async function contarPins(filtros = {}) {
   return Number(fila?.total ?? 0);
 }
 
+/**
+ * Cuenta cuántos PINs (en cualquier estado) apuntan a un contenido
+ * específico. Usada por admin.controller.js como salvaguarda antes de
+ * permitir el borrado definitivo de un contenido: `pins_acceso.contenido_id`
+ * tiene `ON DELETE SET NULL`, y un PIN con `contenido_id IS NULL` se trata
+ * en pinService.js como "acceso global" (a todo el catálogo premium). Sin
+ * este chequeo, borrar un contenido con PINs asociados los convertiría en
+ * PINs globales sin que nadie lo haya decidido.
+ */
+async function contarPinsPorContenido(contenidoId) {
+  const fila = await db
+    .selectFrom('pins_acceso')
+    .select(({ fn }) => fn.countAll().as('total'))
+    .where('contenido_id', '=', contenidoId)
+    .executeTakeFirst();
+  return Number(fila?.total ?? 0);
+}
+
 module.exports = {
   crearPin,
   obtenerPinPorCodigo,
@@ -73,4 +91,5 @@ module.exports = {
   listarPinsDisponibles,
   listarPins,
   contarPins,
+  contarPinsPorContenido,
 };
