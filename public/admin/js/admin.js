@@ -139,6 +139,33 @@ async function cargarSincronizacion() {
     .join('');
 }
 
+document.getElementById('btn-sincronizar-ahora').addEventListener('click', async () => {
+  const boton = document.getElementById('btn-sincronizar-ahora');
+  const resultado = document.getElementById('resultado-sincronizar-ahora');
+
+  boton.disabled = true;
+  boton.textContent = 'Sincronizando…';
+  resultado.classList.add('hidden');
+
+  try {
+    const { datos } = await apiFetch('/api/admin/sincronizacion/ahora', { method: 'POST' });
+
+    resultado.classList.remove('hidden');
+    if (datos.ok) {
+      resultado.className = 'rounded-xl bg-nodo-50 p-3 text-sm font-medium text-nodo-700';
+      resultado.textContent =
+        datos.procesados > 0 ? `Listo: ${datos.procesados} transacción(es) enviada(s) a la central.` : datos.mensaje || 'Sin novedades.';
+    } else {
+      resultado.className = 'rounded-xl bg-rose-50 p-3 text-sm font-medium text-rose-700';
+      resultado.textContent = datos.mensaje || 'No se pudo sincronizar con la central.';
+    }
+  } finally {
+    boton.disabled = false;
+    boton.textContent = 'Sincronizar ahora';
+    cargarSincronizacion();
+  }
+});
+
 // --- Contenidos ---
 async function cargarCategoriasSelect() {
   const respuesta = await fetch('/api/categorias');

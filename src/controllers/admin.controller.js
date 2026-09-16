@@ -7,6 +7,7 @@ const path = require('node:path');
 const env = require('../config/env');
 const logger = require('../utils/logger');
 const telemetryService = require('../services/telemetryService');
+const centralSyncWorker = require('../workers/centralSyncWorker');
 const pinService = require('../services/pinService');
 const pinsRepository = require('../repositories/pinsRepository');
 const contenidosRepository = require('../repositories/contenidosRepository');
@@ -90,6 +91,27 @@ async function listarSincronizacion(req, res, next) {
     const limite = Math.min(200, Math.max(1, Number(req.query.limite) || 50));
     const registros = await logSincronizacionRepository.listarUltimasEjecuciones(limite, req.query.tipo);
     res.json({ ok: true, registros });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * POST /api/admin/sincronizacion/ahora — botón "Sincronizar ahora" del
+ * panel: fuerza un intento inmediato de envío de las transacciones
+ * pendientes a la central, sin esperar al próximo disparo del cron. Si
+ * falla (por ejemplo sin internet: ENOTFOUND/ETIMEDOUT/ECONNREFUSED), las
+ * transacciones de ese lote quedan igual que estaban (sincronizado_central=0
+ * en la base local) — centralSyncWorker.sincronizarAhora() solo las marca
+ * como sincronizadas después de que la central confirmó recibirlas, nunca
+ * antes ni "por las dudas". Siempre responde 200 con `{ok: true/false, ...}`
+ * (nunca 500 por un fallo de red hacia la central), para que el panel
+ * pueda mostrar el resultado sin tratarlo como un error del propio nodo.
+ */
+async function sincronizarCentralAhora(req, res, next) {
+  try {
+    const resultado = await centralSyncWorker.sincronizarAhora({ esManual: true });
+    res.json(resultado);
   } catch (err) {
     next(err);
   }
@@ -499,6 +521,7 @@ module.exports = {
   listarPins,
   generarPins,
   listarSincronizacion,
+  sincronizarCentralAhora,
   subirContenidoManual,
   listarContenidosAdmin,
   editarContenido,

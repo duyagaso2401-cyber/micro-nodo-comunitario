@@ -24,6 +24,7 @@ router.get('/pins', adminController.listarPins);
 router.post('/pins/generar', adminController.generarPins);
 
 router.get('/sincronizacion', adminController.listarSincronizacion);
+router.post('/sincronizacion/ahora', adminController.sincronizarCentralAhora);
 
 router.get('/contenidos', adminController.listarContenidosAdmin);
 router.post('/contenidos', uploadContenidoManual, adminController.subirContenidoManual);
