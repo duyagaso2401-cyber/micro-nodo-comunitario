@@ -1,27 +1,33 @@
 {
   "name": "micro-nodo-comunitario",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "Micro-Nodo Comunitario de Contenido Local y Servicios Digitales (Offline-First) - Fase 1 MVP",
+  "description": "Micro-Nodo Comunitario de Contenido Local y Servicios Digitales (Offline-First) - Fase 1 + Fase 2",
   "type": "commonjs",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "db:migrate": "node src/db/migrate.js",
+    "db:migrate:central": "node scripts/migrateCentral.js",
     "db:seed": "node scripts/seed.js",
     "sync": "node -e \"require('./src/workers/syncWorker').ejecutarSincronizacion()\"",
+    "sync:central": "node -e \"require('./src/workers/centralSyncWorker').sincronizarAhora()\"",
+    "heartbeat": "node -e \"require('./src/services/telemetryService').enviarHeartbeat()\"",
+    "build": "npm run css:build",
     "css:build": "tailwindcss -i ./src/styles/input.css -o ./public/css/output.css --minify",
     "css:watch": "tailwindcss -i ./src/styles/input.css -o ./public/css/output.css --watch",
-    "postinstall": "node src/db/migrate.js"
+    "postinstall": "node src/db/migrate.js && npm run css:build"
   },
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "express-session": "^1.18.0",
     "kysely": "^0.27.4",
-    "node-cron": "^3.0.3"
-  },
-  "devDependencies": {
+    "multer": "^1.4.5-lts.1",
+    "node-cron": "^3.0.3",
+    "pg": "^8.12.0",
     "tailwindcss": "^3.4.10"
   },
   "engines": {

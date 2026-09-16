@@ -100,3 +100,75 @@ CREATE TABLE IF NOT EXISTS nodo_config (
   valor           TEXT NOT NULL,
   actualizado_en  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
+
+-- ==========================================================================
+-- Fase 2 — tablas agregadas. Se crean con CREATE TABLE IF NOT EXISTS, así
+-- que aplicar este esquema sobre una base de datos de Fase 1 ya en uso es
+-- seguro: las tablas existentes no se tocan, solo se agregan las nuevas.
+-- Las columnas nuevas sobre tablas de Fase 1 (transacciones) se agregan por
+-- separado en src/db/migrate.js con ALTER TABLE + introspección, porque
+-- SQLite no soporta "ADD COLUMN IF NOT EXISTS".
+-- ==========================================================================
+
+-- --------------------------------------------------------------------------
+-- admins: usuarios con acceso al panel /admin (autenticación por sesión)
+-- --------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS admins (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  usuario         TEXT NOT NULL UNIQUE,
+  password_hash   TEXT NOT NULL,           -- bcryptjs
+  creado_en       TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  ultimo_acceso   TEXT
+);
+
+-- --------------------------------------------------------------------------
+-- log_sincronizacion: historial de corridas de los workers en segundo plano
+-- (sync de contenido con Gutendex, sync de transacciones con la central,
+-- envío de heartbeats), visible en el panel de administración.
+-- --------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS log_sincronizacion (
+  id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  tipo                TEXT NOT NULL CHECK (tipo IN ('contenido','transacciones_central','heartbeat')),
+  estado              TEXT NOT NULL CHECK (estado IN ('exito','error','omitido')),
+  detalle             TEXT,                 -- mensaje corto legible
+  registros_procesados INTEGER NOT NULL DEFAULT 0,
+  duracion_ms         INTEGER,
+  creado_en           TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_log_sync_tipo ON log_sincronizacion(tipo);
+CREATE INDEX IF NOT EXISTS idx_log_sync_fecha ON log_sincronizacion(creado_en);
+
+-- --------------------------------------------------------------------------
+-- anuncios: publicidad local (comercios del sector) mostrada antes de
+-- descargas de contenido gratuito.
+-- --------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS anuncios (
+  id                    INTEGER PRIMARY KEY AUTOINCREMENT,
+  titulo                TEXT NOT NULL,
+  imagen_url            TEXT NOT NULL,        -- ruta local (/uploads/anuncios/..) o URL externa
+  link                  TEXT,                 -- a dónde apunta si el usuario hace clic (opcional)
+  impresiones_max       INTEGER NOT NULL DEFAULT 0,   -- 0 = sin límite
+  impresiones_actuales  INTEGER NOT NULL DEFAULT 0,
+  activo                INTEGER NOT NULL DEFAULT 1 CHECK (activo IN (0,1)),
+  creado_en             TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_anuncios_activo ON anuncios(activo);
+
+-- --------------------------------------------------------------------------
+-- registro_descargas: un evento por cada descarga servida (gratis o
+-- premium). contenidos.veces_descargado sigue siendo el contador rápido de
+-- toda la vida del contenido; esta tabla existe para poder responder
+-- "¿cuántas descargas hubo HOY?" (requerido por el heartbeat de Fase 2 y
+-- por el panel de administración), algo que un contador acumulado no
+-- puede responder por sí solo.
+-- --------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS registro_descargas (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  contenido_id  INTEGER REFERENCES contenidos(id) ON DELETE SET NULL,
+  es_premium    INTEGER NOT NULL DEFAULT 0 CHECK (es_premium IN (0,1)),
+  creado_en     TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_registro_descargas_fecha ON registro_descargas(creado_en);

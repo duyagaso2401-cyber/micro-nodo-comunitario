@@ -60,11 +60,45 @@
  * @property {'confirmada'|'anulada'|'pendiente'} estado
  * @property {string|null} cliente_ref
  * @property {string} creado_en
+ * @property {0|1} sincronizado_central
+ * @property {string|null} fecha_sincronizado_central
  *
  * @typedef {Object} NodoConfigRow
  * @property {string} clave
  * @property {string} valor
  * @property {string} actualizado_en
+ *
+ * @typedef {Object} AdminRow
+ * @property {number} id
+ * @property {string} usuario
+ * @property {string} password_hash
+ * @property {string} creado_en
+ * @property {string|null} ultimo_acceso
+ *
+ * @typedef {Object} LogSincronizacionRow
+ * @property {number} id
+ * @property {'contenido'|'transacciones_central'|'heartbeat'} tipo
+ * @property {'exito'|'error'|'omitido'} estado
+ * @property {string|null} detalle
+ * @property {number} registros_procesados
+ * @property {number|null} duracion_ms
+ * @property {string} creado_en
+ *
+ * @typedef {Object} AnuncioRow
+ * @property {number} id
+ * @property {string} titulo
+ * @property {string} imagen_url
+ * @property {string|null} link
+ * @property {number} impresiones_max
+ * @property {number} impresiones_actuales
+ * @property {0|1} activo
+ * @property {string} creado_en
+ *
+ * @typedef {Object} RegistroDescargaRow
+ * @property {number} id
+ * @property {number|null} contenido_id
+ * @property {0|1} es_premium
+ * @property {string} creado_en
  *
  * @typedef {Object} Database
  * @property {CategoriaRow} categorias
@@ -72,6 +106,10 @@
  * @property {PinAccesoRow} pins_acceso
  * @property {TransaccionRow} transacciones
  * @property {NodoConfigRow} nodo_config
+ * @property {AdminRow} admins
+ * @property {LogSincronizacionRow} log_sincronizacion
+ * @property {AnuncioRow} anuncios
+ * @property {RegistroDescargaRow} registro_descargas
  */
 
 module.exports = {};

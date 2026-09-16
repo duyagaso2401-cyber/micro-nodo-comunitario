@@ -6,6 +6,7 @@ const env = require('../config/env');
 const logger = require('../utils/logger');
 const categoriasRepository = require('../repositories/categoriasRepository');
 const contenidosRepository = require('../repositories/contenidosRepository');
+const registroDescargasRepository = require('../repositories/registroDescargasRepository');
 const descargaToken = require('../utils/descargaToken');
 
 async function listarCategorias(req, res, next) {
@@ -88,6 +89,7 @@ async function descargarContenido(req, res, next) {
     }
 
     await contenidosRepository.registrarDescarga(id);
+    await registroDescargasRepository.registrarEvento(id, Boolean(contenido.es_premium));
 
     const nombreDescarga = `${contenido.titulo}.${path.extname(rutaAbsoluta).slice(1) || 'bin'}`;
     res.download(rutaAbsoluta, nombreDescarga);

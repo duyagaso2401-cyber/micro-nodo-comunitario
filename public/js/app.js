@@ -47,6 +47,10 @@ const el = {
   modalValidar: document.getElementById('modal-validar'),
   modalCancelar: document.getElementById('modal-cancelar'),
   modalCerrar: document.getElementById('modal-cerrar'),
+  modalAnuncio: document.getElementById('modal-anuncio'),
+  anuncioImagen: document.getElementById('anuncio-imagen'),
+  anuncioTitulo: document.getElementById('anuncio-titulo'),
+  anuncioContador: document.getElementById('anuncio-contador'),
 };
 
 function formatearTamano(bytes) {
@@ -171,10 +175,68 @@ async function cargarContenidos() {
 
 function manejarDescarga(contenido) {
   if (!contenido.esPremium) {
-    window.location.href = `/api/contenidos/${contenido.id}/descargar`;
+    iniciarDescargaGratuitaConAnuncio(contenido);
     return;
   }
   abrirModalPin(contenido);
+}
+
+/**
+ * Antes de descargar contenido gratuito, intenta mostrar un anuncio local
+ * de unos segundos (publicidad de comercios del sector, que sostiene el
+ * modelo pasivo del nodo). Si no hay ningún anuncio configurado, o falla
+ * la consulta, la descarga sigue de largo sin bloquear al usuario — la
+ * publicidad nunca debe ser un obstáculo para acceder al contenido.
+ */
+async function iniciarDescargaGratuitaConAnuncio(contenido) {
+  const urlDescarga = `/api/contenidos/${contenido.id}/descargar`;
+
+  let anuncio = null;
+  let duracionSegundos = 5;
+  try {
+    const { datos } = await apiFetch('/api/anuncios/siguiente');
+    if (datos.ok) {
+      anuncio = datos.anuncio;
+      duracionSegundos = datos.duracionSegundos || 5;
+    }
+  } catch (err) {
+    console.warn('No se pudo consultar publicidad, se omite:', err);
+  }
+
+  if (!anuncio) {
+    window.location.href = urlDescarga;
+    return;
+  }
+
+  mostrarModalAnuncio(anuncio, duracionSegundos, () => {
+    // No se espera la respuesta: registrar la impresión no debe demorar la descarga.
+    apiFetch(`/api/anuncios/${anuncio.id}/impresion`, { method: 'POST' }).catch(() => {});
+    window.location.href = urlDescarga;
+    setTimeout(() => cerrarModalAnuncio(), 300);
+  });
+}
+
+function mostrarModalAnuncio(anuncio, duracionSegundos, alTerminar) {
+  el.anuncioImagen.src = anuncio.imagenUrl;
+  el.anuncioTitulo.textContent = anuncio.titulo;
+  el.anuncioContador.textContent = duracionSegundos;
+  el.modalAnuncio.classList.remove('hidden');
+  el.modalAnuncio.classList.add('flex');
+
+  let restante = duracionSegundos;
+  const intervalo = setInterval(() => {
+    restante -= 1;
+    el.anuncioContador.textContent = Math.max(restante, 0);
+    if (restante <= 0) {
+      clearInterval(intervalo);
+      alTerminar();
+    }
+  }, 1000);
+}
+
+function cerrarModalAnuncio() {
+  el.modalAnuncio.classList.add('hidden');
+  el.modalAnuncio.classList.remove('flex');
 }
 
 function abrirModalPin(contenido) {

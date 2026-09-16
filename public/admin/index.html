@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Nodo Comunitario | Panel de administración</title>
+  <link rel="stylesheet" href="/css/output.css" />
+</head>
+<body class="min-h-screen bg-slate-50 pb-16 text-slate-900 antialiased">
+
+  <header class="sticky top-0 z-20 flex items-center justify-between bg-nodo-700 px-4 py-4 text-white shadow-md">
+    <div>
+      <p class="text-xs uppercase tracking-wide text-nodo-100">Panel de administración</p>
+      <h1 id="nombre-nodo" class="text-lg font-bold leading-tight">Cargando nodo…</h1>
+    </div>
+    <div class="flex items-center gap-3">
+      <span id="indicador-central" class="hidden rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium"></span>
+      <button id="btn-logout" class="rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold active:bg-white/20">Salir</button>
+    </div>
+  </header>
+
+  <!-- Tarjetas de estadísticas -->
+  <section class="grid grid-cols-2 gap-3 px-4 py-4 sm:grid-cols-4" id="tarjetas-stats">
+    <div class="tarjeta-stat">
+      <p class="tarjeta-stat-valor" id="stat-disco">—</p>
+      <p class="tarjeta-stat-etiqueta">Disco usado (MB)</p>
+    </div>
+    <div class="tarjeta-stat">
+      <p class="tarjeta-stat-valor" id="stat-descargas">—</p>
+      <p class="tarjeta-stat-etiqueta">Descargas hoy</p>
+    </div>
+    <div class="tarjeta-stat">
+      <p class="tarjeta-stat-valor" id="stat-pines">—</p>
+      <p class="tarjeta-stat-etiqueta">PINs consumidos hoy</p>
+    </div>
+    <div class="tarjeta-stat">
+      <p class="tarjeta-stat-valor" id="stat-recaudo">—</p>
+      <p class="tarjeta-stat-etiqueta">Recaudado hoy (COP)</p>
+    </div>
+  </section>
+
+  <!-- Pestañas -->
+  <nav class="flex gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4">
+    <button class="tab-admin tab-admin-activa" data-tab="pins">PINs</button>
+    <button class="tab-admin tab-admin-inactiva" data-tab="sync">Sincronización</button>
+    <button class="tab-admin tab-admin-inactiva" data-tab="contenidos">Contenidos</button>
+    <button class="tab-admin tab-admin-inactiva" data-tab="anuncios">Publicidad</button>
+    <button class="tab-admin tab-admin-inactiva" data-tab="cuenta">Mi cuenta</button>
+  </nav>
+
+  <main class="px-4 py-4">
+
+    <!-- Pestaña PINs -->
+    <section id="panel-pins" class="space-y-4">
+      <form id="form-generar-pins" class="grid grid-cols-2 gap-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:grid-cols-4">
+        <div>
+          <label class="etiqueta-admin">Cantidad</label>
+          <input name="cantidad" type="number" min="1" max="200" value="10" class="campo-admin" required />
+        </div>
+        <div>
+          <label class="etiqueta-admin">Valor (COP)</label>
+          <input name="valorCop" type="number" min="0" placeholder="2000" class="campo-admin" />
+        </div>
+        <div>
+          <label class="etiqueta-admin">Comisión local (%)</label>
+          <input name="comisionLocalPct" type="number" min="0" max="100" placeholder="20" class="campo-admin" />
+        </div>
+        <div class="flex items-end">
+          <button type="submit" class="boton-primario">Generar lote</button>
+        </div>
+      </form>
+      <p id="resultado-generar-pins" class="hidden rounded-xl bg-nodo-50 p-3 text-xs text-nodo-700"></p>
+
+      <div class="flex gap-2 text-sm">
+        <button class="pill-categoria pill-categoria-activa" data-filtro-pin="">Todos</button>
+        <button class="pill-categoria pill-categoria-inactiva" data-filtro-pin="disponible">Disponibles</button>
+        <button class="pill-categoria pill-categoria-inactiva" data-filtro-pin="usado">Usados</button>
+      </div>
+
+      <div class="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-100">
+        <table class="tabla-admin">
+          <thead><tr><th>Código</th><th>Estado</th><th>Valor</th><th>Creado</th><th>Usado</th></tr></thead>
+          <tbody id="tabla-pins"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Pestaña Sincronización -->
+    <section id="panel-sync" class="hidden space-y-3">
+      <div class="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-100">
+        <table class="tabla-admin">
+          <thead><tr><th>Tipo</th><th>Estado</th><th>Detalle</th><th>Registros</th><th>Fecha</th></tr></thead>
+          <tbody id="tabla-sync"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Pestaña Contenidos (carga manual) -->
+    <section id="panel-contenidos" class="hidden space-y-4">
+      <form id="form-subir-contenido" class="space-y-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
+        <p class="text-sm font-semibold text-slate-700">Carga manual de emergencia (sin internet)</p>
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label class="etiqueta-admin">Título *</label>
+            <input name="titulo" type="text" required class="campo-admin" />
+          </div>
+          <div>
+            <label class="etiqueta-admin">Autor</label>
+            <input name="autor" type="text" class="campo-admin" />
+          </div>
+          <div>
+            <label class="etiqueta-admin">Tipo *</label>
+            <select name="tipo" required class="campo-admin">
+              <option value="pdf">PDF</option>
+              <option value="epub">EPUB</option>
+              <option value="mp3">MP3</option>
+              <option value="video">Video</option>
+              <option value="doc">Documento</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+          <div>
+            <label class="etiqueta-admin">Categoría</label>
+            <select name="categoriaSlug" id="select-categoria" class="campo-admin"></select>
+          </div>
+          <div class="sm:col-span-2">
+            <label class="etiqueta-admin">Descripción</label>
+            <textarea name="descripcion" rows="2" class="campo-admin"></textarea>
+          </div>
+          <div class="flex items-center gap-2">
+            <input id="es-premium" name="esPremium" type="checkbox" class="h-4 w-4" />
+            <label for="es-premium" class="text-sm text-slate-600">Es contenido premium (requiere PIN)</label>
+          </div>
+          <div>
+            <label class="etiqueta-admin">Archivo *</label>
+            <input name="archivo" type="file" required class="campo-admin" />
+          </div>
+        </div>
+        <button type="submit" class="boton-primario">Subir contenido</button>
+        <p id="resultado-subir-contenido" class="hidden text-center text-sm font-medium"></p>
+      </form>
+    </section>
+
+    <!-- Pestaña Publicidad -->
+    <section id="panel-anuncios" class="hidden space-y-4">
+      <form id="form-crear-anuncio" class="grid grid-cols-1 gap-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:grid-cols-2">
+        <div>
+          <label class="etiqueta-admin">Título / comercio *</label>
+          <input name="titulo" type="text" required class="campo-admin" />
+        </div>
+        <div>
+          <label class="etiqueta-admin">Enlace (opcional)</label>
+          <input name="link" type="text" placeholder="https://…" class="campo-admin" />
+        </div>
+        <div>
+          <label class="etiqueta-admin">Imagen (banner)</label>
+          <input name="imagen" type="file" accept="image/*" class="campo-admin" />
+        </div>
+        <div>
+          <label class="etiqueta-admin">Impresiones máximas (0 = ilimitado)</label>
+          <input name="impresionesMax" type="number" min="0" value="0" class="campo-admin" />
+        </div>
+        <div class="sm:col-span-2">
+          <button type="submit" class="boton-primario">Crear anuncio</button>
+        </div>
+      </form>
+
+      <div class="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-100">
+        <table class="tabla-admin">
+          <thead><tr><th>Anuncio</th><th>Impresiones</th><th>Estado</th><th></th></tr></thead>
+          <tbody id="tabla-anuncios"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Pestaña Mi cuenta -->
+    <section id="panel-cuenta" class="hidden">
+      <form id="form-cambiar-password" class="max-w-sm space-y-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
+        <p class="text-sm font-semibold text-slate-700">Cambiar mi contraseña</p>
+        <div>
+          <label class="etiqueta-admin">Contraseña actual</label>
+          <input name="passwordActual" type="password" required class="campo-admin" />
+        </div>
+        <div>
+          <label class="etiqueta-admin">Contraseña nueva (mín. 6 caracteres)</label>
+          <input name="passwordNueva" type="password" required minlength="6" class="campo-admin" />
+        </div>
+        <button type="submit" class="boton-primario">Actualizar contraseña</button>
+        <p id="resultado-password" class="hidden text-center text-sm font-medium"></p>
+      </form>
+    </section>
+
+  </main>
+
+  <script src="/admin/js/admin.js"></script>
+</body>
+</html>

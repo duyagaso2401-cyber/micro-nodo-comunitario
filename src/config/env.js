@@ -33,9 +33,31 @@ const env = {
 
   ADMIN_API_KEY: process.env.ADMIN_API_KEY || 'cambia-esta-clave-en-produccion',
 
-  TELEMETRY_HABILITADO: String(process.env.TELEMETRY_HABILITADO || 'false') === 'true',
-  TELEMETRY_ENDPOINT_URL: process.env.TELEMETRY_ENDPOINT_URL || '',
-  TELEMETRY_INTERVALO_MIN: Number(process.env.TELEMETRY_INTERVALO_MIN || 15),
+  // --- Fase 2: backend central (Neon/Supabase Postgres) ---
+  CENTRAL_DATABASE_URL: process.env.CENTRAL_DATABASE_URL || '',
+  CENTRAL_SYNC_HABILITADO: String(process.env.CENTRAL_SYNC_HABILITADO ?? 'true') === 'true',
+  CENTRAL_SYNC_CRON_EXPRESION: process.env.CENTRAL_SYNC_CRON_EXPRESION || '*/10 * * * *',
+  CENTRAL_SYNC_LOTE_MAX: Number(process.env.CENTRAL_SYNC_LOTE_MAX || 50),
+
+  // --- Fase 2: telemetría (heartbeat hacia la central) ---
+  TELEMETRY_HABILITADO: String(process.env.TELEMETRY_HABILITADO ?? 'true') === 'true',
+  TELEMETRY_INTERVALO_MIN: Number(process.env.TELEMETRY_INTERVALO_MIN || 5),
+
+  // --- Fase 2: sesión y bootstrap del administrador del panel /admin ---
+  SESSION_SECRET: process.env.SESSION_SECRET || 'cambia-este-secreto-de-sesion-en-produccion',
+  SESSION_MAX_EDAD_HORAS: Number(process.env.SESSION_MAX_EDAD_HORAS || 12),
+  ADMIN_USUARIO: process.env.ADMIN_USUARIO || 'admin',
+  ADMIN_PASSWORD_INICIAL: process.env.ADMIN_PASSWORD_INICIAL || 'cambiar123',
+  // true SOLO si el nodo se sirve detrás de un proxy que termina TLS (Render,
+  // Railway, nginx con certificado, etc. — la app en sí recibe HTTP plano).
+  // Déjala en false para el despliegue típico offline-first: un Mini
+  // PC/Raspberry Pi sirviendo el portal por HTTP plano en la red Wi-Fi
+  // local, donde exigir HTTPS en la cookie rompería el login del panel.
+  COOKIE_SEGURA: String(process.env.COOKIE_SEGURA ?? 'false') === 'true',
+
+  // --- Fase 2: publicidad local / cargas manuales ---
+  UPLOADS_ANUNCIOS_PATH: path.resolve(process.cwd(), process.env.UPLOADS_ANUNCIOS_PATH || './public/uploads/anuncios'),
+  ANUNCIO_DURACION_SEGUNDOS: Number(process.env.ANUNCIO_DURACION_SEGUNDOS || 5),
 };
 
 module.exports = env;

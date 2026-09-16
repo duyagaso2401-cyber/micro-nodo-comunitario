@@ -46,4 +46,31 @@ async function listarPinsDisponibles(limite = 100) {
     .execute();
 }
 
-module.exports = { crearPin, obtenerPinPorCodigo, marcarPinUsado, listarPinsDisponibles };
+/**
+ * Listado genérico para el panel de administración: pins activos, usados,
+ * anulados o expirados, más recientes primero.
+ * @param {{estado?: 'disponible'|'usado'|'anulado'|'expirado', limite?: number, offset?: number}} filtros
+ */
+async function listarPins(filtros = {}) {
+  let query = db.selectFrom('pins_acceso').selectAll().orderBy('fecha_creacion', 'desc');
+  if (filtros.estado) query = query.where('estado', '=', filtros.estado);
+  if (filtros.limite) query = query.limit(filtros.limite);
+  if (filtros.offset) query = query.offset(filtros.offset);
+  return query.execute();
+}
+
+async function contarPins(filtros = {}) {
+  let query = db.selectFrom('pins_acceso').select(({ fn }) => fn.countAll().as('total'));
+  if (filtros.estado) query = query.where('estado', '=', filtros.estado);
+  const fila = await query.executeTakeFirst();
+  return Number(fila?.total ?? 0);
+}
+
+module.exports = {
+  crearPin,
+  obtenerPinPorCodigo,
+  marcarPinUsado,
+  listarPinsDisponibles,
+  listarPins,
+  contarPins,
+};

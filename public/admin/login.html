@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Nodo Comunitario | Acceso administrador</title>
+  <link rel="stylesheet" href="/css/output.css" />
+</head>
+<body class="flex min-h-screen items-center justify-center bg-slate-50 px-4 text-slate-900 antialiased">
+
+  <div class="w-full max-w-sm">
+    <div class="mb-6 text-center">
+      <p class="text-xs font-semibold uppercase tracking-wide text-nodo-600">Panel de administración</p>
+      <h1 id="nombre-nodo-login" class="text-xl font-bold">Micro-Nodo Comunitario</h1>
+    </div>
+
+    <form id="form-login" class="space-y-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-100">
+      <div>
+        <label class="etiqueta-admin" for="usuario">Usuario</label>
+        <input id="usuario" name="usuario" type="text" autocomplete="username" required class="campo-admin" />
+      </div>
+      <div>
+        <label class="etiqueta-admin" for="password">Contraseña</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required class="campo-admin" />
+      </div>
+
+      <p id="error-login" class="hidden text-center text-sm font-medium text-rose-600"></p>
+
+      <button type="submit" id="btn-login" class="boton-primario">Ingresar</button>
+    </form>
+
+    <p class="mt-4 text-center text-xs text-slate-400">
+      Acceso solo para el operador del nodo. Si es tu primer ingreso, usa las credenciales configuradas en <code>.env</code>.
+    </p>
+  </div>
+
+  <script src="/admin/js/admin-login.js"></script>
+</body>
+</html>

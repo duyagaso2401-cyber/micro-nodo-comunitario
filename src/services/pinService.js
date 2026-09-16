@@ -12,6 +12,7 @@ const pinsRepository = require('../repositories/pinsRepository');
 const contenidosRepository = require('../repositories/contenidosRepository');
 const transaccionesRepository = require('../repositories/transaccionesRepository');
 const descargaToken = require('../utils/descargaToken');
+const centralSyncWorker = require('../workers/centralSyncWorker');
 
 // Alfabeto sin caracteres ambiguos (0/O, 1/I/L) para que el operador del
 // local pueda dictar o escribir el PIN a mano sin confusiones.
@@ -115,6 +116,11 @@ async function validarYConsumirPin({ codigo, contenidoId, ip }) {
     metodoPago: 'efectivo',
     clienteRef: ip ?? null,
   });
+
+  // Intenta reflejar el ingreso en la central casi en tiempo real si hay
+  // conexión. No bloquea la respuesta al cliente ni falla la validación
+  // del PIN si la central está caída: el worker periódico ya cubre ese caso.
+  centralSyncWorker.sincronizarEnSegundoPlano();
 
   const token = descargaToken.generarToken(contenidoId);
 

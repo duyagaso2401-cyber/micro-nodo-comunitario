@@ -97,6 +97,22 @@
     </div>
   </div>
 
+  <!-- Modal de anuncio (5s) antes de una descarga gratuita -->
+  <div id="modal-anuncio" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 p-4">
+    <div class="w-full max-w-sm overflow-hidden rounded-2xl bg-white">
+      <div class="relative">
+        <img id="anuncio-imagen" src="" alt="Anuncio" class="h-48 w-full object-cover bg-slate-100" />
+        <span class="absolute right-2 top-2 rounded-full bg-black/60 px-2.5 py-1 text-xs font-semibold text-white">
+          Tu descarga empieza en <span id="anuncio-contador">5</span>s
+        </span>
+      </div>
+      <div class="p-4">
+        <p id="anuncio-titulo" class="text-sm font-semibold text-slate-800">Anuncio</p>
+        <p class="mt-1 text-xs text-slate-400">Publicidad local · gracias por apoyar el nodo comunitario</p>
+      </div>
+    </div>
+  </div>
+
   <script src="/js/app.js"></script>
 </body>
 </html>
